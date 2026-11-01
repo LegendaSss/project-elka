@@ -3522,87 +3522,6 @@ function applyContentTheme(theme) {
     showToast(`🌟 Тема видеоконтента изменена: ${theme.toUpperCase()}`);
 }
 
-function handleClientLogoUpload(file) {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-            const W = 4096, H = 256;
-            const c = document.createElement('canvas');
-            c.width = W; c.height = H;
-            const g = c.getContext('2d');
-            
-            // Премиальный глубокий ночной фон
-            const bgGrad = g.createLinearGradient(0, 0, 0, H);
-            bgGrad.addColorStop(0, '#020617');
-            bgGrad.addColorStop(0.5, '#0f172a');
-            bgGrad.addColorStop(1, '#020617');
-            g.fillStyle = bgGrad;
-            g.fillRect(0, 0, W, H);
-            
-            // Золотая окантовка по краям ленты
-            g.fillStyle = '#eab308';
-            g.fillRect(0, 0, W, 4);
-            g.fillRect(0, H - 4, W, 4);
-            
-            // Распределение логотипа заказчика вдоль ленты
-            const repeats = 6;
-            const cellW = W / repeats;
-            const maxLogoH = H * 0.72;
-            const aspect = img.width / img.height;
-            const logoW = Math.min(cellW * 0.45, maxLogoH * aspect);
-            const logoH = logoW / aspect;
-            
-            for (let i = 0; i < repeats; i++) {
-                const cx = i * cellW + cellW * 0.28;
-                const cy = H / 2;
-                g.drawImage(img, cx - logoW / 2, cy - logoH / 2, logoW, logoH);
-                
-                // Праздничная надпись рядом с каждым логотипом
-                g.fillStyle = '#ffffff';
-                g.font = 'bold 36px "Inter", system-ui, sans-serif';
-                g.textAlign = 'left';
-                g.textBaseline = 'middle';
-                g.shadowColor = 'rgba(234, 179, 8, 0.8)';
-                g.shadowBlur = 12;
-                g.fillText('★ С НАСТУПАЮЩИМ 2027 ГОДОМ! ★', cx + logoW / 2 + 25, cy);
-                g.shadowBlur = 0;
-            }
-            
-            // Светодиодная микропиксельная сетка
-            g.fillStyle = 'rgba(0, 0, 0, 0.22)';
-            for (let y = 0; y < H; y += 4) {
-                g.fillRect(0, y, W, 1);
-            }
-            for (let x = 0; x < W; x += 4) {
-                g.fillRect(x, 0, 1, H);
-            }
-            
-            if (textTexture) textTexture.dispose();
-            textTexture = new THREE.CanvasTexture(c);
-            textTexture.wrapS = textTexture.wrapT = THREE.RepeatWrapping;
-            textTexture.magFilter = THREE.LinearFilter;
-            textTexture.minFilter = THREE.LinearMipmapLinearFilter;
-            
-            if (modulesMesh && modulesMesh.material) {
-                modulesMesh.material.map = textTexture;
-                modulesMesh.material.emissiveMap = textTexture;
-                modulesMesh.material.needsUpdate = true;
-            }
-            
-            const statusEl = document.getElementById('client-logo-status');
-            if (statusEl) {
-                statusEl.style.display = 'block';
-                statusEl.textContent = `✅ Логотип «${file.name}» транслируется на 3D ёлке!`;
-            }
-            showToast(`🎉 Логотип «${file.name}» успешно загружен и наложен на 3D ёлку!`);
-        };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-}
-
 // 3D-фокусировка на срез профиля короба 130 мм
 function zoomToSectionCut3D() {
     const modal = document.getElementById('modal-section-cut');
@@ -3628,18 +3547,6 @@ function setupUI() {
         const b = document.getElementById(`btn-theme-${t}`);
         if (b) b.addEventListener('click', () => applyContentTheme(t));
     });
-
-    // Загрузка логотипа заказчика
-    const btnUploadLogo = document.getElementById('btn-upload-logo');
-    const inputClientLogo = document.getElementById('input-client-logo');
-    if (btnUploadLogo && inputClientLogo) {
-        btnUploadLogo.addEventListener('click', () => inputClientLogo.click());
-        inputClientLogo.addEventListener('change', (e) => {
-            if (e.target.files && e.target.files[0]) {
-                handleClientLogoUpload(e.target.files[0]);
-            }
-        });
-    }
 
     // Модальное окно чертёжного среза короба 130 мм
     const modalSectionCut = document.getElementById('modal-section-cut');
