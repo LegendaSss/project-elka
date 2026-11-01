@@ -124,7 +124,7 @@
                     <span>📋 ДОКУМЕНТАЦИЯ И УЗЛЫ</span>
                     <span class="card-pill verified">ВЕРИФИЦИРОВАНО</span>
                 </div>
-                <div class="btn-group-2">
+                <div class="btn-group-2" style="margin-bottom: 8px;">
                     <button id="btn-open-passport" class="btn-executive btn-passport" title="Открыть технический паспорт и заводские параметры">
                         <span class="btn-icon">📖</span>
                         <span class="btn-text">
@@ -140,6 +140,10 @@
                         </span>
                     </button>
                 </div>
+                <button id="btn-open-section-cut" class="btn-action-tile" style="width: 100%; border: 1px solid rgba(56, 189, 248, 0.4); background: linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(15, 23, 42, 0.7) 100%); cursor: pointer;">
+                    <span class="tile-icon">📐</span>
+                    <span class="tile-label" style="font-size: 11px; font-weight: 700; color: #38bdf8;">Чертёжный разрез короба 130 мм & Вентиляция 80 мм</span>
+                </button>
             </div>
 
             <!-- 4. Magnetic Stud Configuration (4 vs 8 Magnets per Module) -->
@@ -161,15 +165,34 @@
             </div>
 
             <!-- 5. Text & Media Streaming -->
-            <div class="panel-card">
+            <div class="panel-card" style="border-left: 3px solid #ec4899;">
                 <div class="card-title">
-                    <span>✍️ БЕГУЩАЯ СТРОКА (КОНТЕНТ)</span>
+                    <span>✍️ КОНТЕНТ И БЕГУЩАЯ СТРОКА</span>
                     <span class="card-pill live">LIVE</span>
                 </div>
                 <div class="luxury-input-group">
                     <input type="text" id="input-text" value="★ С НАСТУПАЮЩИМ 2027 ГОДОМ! ★ ЭКРАН СВ. ВЛАДИМИРА ★ ВСЕМ ЗДОРОВЬЯ И СЧАСТЬЯ! ★ СПАСИБО ДОКТОРАМ! ★" placeholder="Введите текст поздравления...">
                     <button id="btn-apply-text" class="btn-apply">ОК</button>
                 </div>
+                
+                <div class="sub-label" style="font-size: 11px; color: #94a3b8; margin: 10px 0 4px 0; font-weight: 600;">ПАЛИТРА И ВИДЕОЭФФЕКТЫ:</div>
+                <div class="segmented-control seg-4">
+                    <button id="btn-theme-festive" class="seg-btn active" title="Рубиново-красный кремлёвский стиль">🔴 Рубин</button>
+                    <button id="btn-theme-gold" class="seg-btn" title="Золотое праздничное сияние">🟡 Золото</button>
+                    <button id="btn-theme-salute" class="seg-btn" title="Праздничный салют с искрами">🎆 Салют</button>
+                    <button id="btn-theme-aurora" class="seg-btn" title="Северное изумрудное сияние">🌌 Сияние</button>
+                </div>
+
+                <!-- Загрузка логотипа заказчика -->
+                <input type="file" id="input-client-logo" accept="image/*" style="display: none;">
+                <button id="btn-upload-logo" class="btn-action-tile" style="margin-top: 10px; width: 100%; border: 1px dashed rgba(236, 72, 153, 0.4); background: rgba(236, 72, 153, 0.08); cursor: pointer;">
+                    <span class="tile-icon">🖼️</span>
+                    <span class="tile-label" style="font-size: 11px; color: #f472b6;">Загрузить логотип / баннер заказчика (PNG / JPG)</span>
+                </button>
+                <div id="client-logo-status" style="display: none; font-size: 11px; color: #38bdf8; margin-top: 5px; text-align: center; background: rgba(56, 189, 248, 0.1); padding: 4px; border-radius: 4px;">
+                    ✅ Логотип заказчика успешно наложен на ёлку!
+                </div>
+
                 <div class="slider-group" style="margin-top: 10px;">
                     <label>Скорость бегущей строки <span id="val-speed">1.0x</span></label>
                     <input type="range" id="sl-speed" min="0" max="3.0" step="0.2" value="1.0">
@@ -897,8 +920,8 @@
                 <span class="hud-badge">4K TOUR</span>
             </div>
             <div class="hud-texts">
-                <div class="hud-shot-title" id="hud-shot-title">ПЛАН 1/4: Монументальный ракурс</div>
-                <div class="hud-shot-sub" id="hud-shot-sub">Общий вид конусной светодиодной ёлки 4.0 м</div>
+                <div class="hud-shot-title" id="hud-shot-title">ПЛАН 1/5: Архитектура и масштаб 4.0 м</div>
+                <div class="hud-shot-sub" id="hud-shot-sub">Общий дневной вид светодиодной ёлки высотой 4.0 м</div>
             </div>
             <button id="btn-tour-stop" class="btn-tour-stop">
                 ⏹️ Завершить тур (ESC)
@@ -922,5 +945,179 @@
     }
     </script>
     <script type="module" src="main.js?v=tree_inspector_v7"></script>
+
+    <!-- Modal: Engineering Section Cut View (Чертёжный разрез короба 130 мм и вентиляция 80 мм) -->
+    <div id="modal-section-cut" class="modal-overlay">
+        <div class="modal-card" style="max-width: 980px; width: 95%;">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <div class="modal-badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);">РАЗРЕЗ УЗЛА ПО ГОСТ</div>
+                    <h2>Чертёжный разрез короба 130 мм & Вентиляционный коридор 80 мм</h2>
+                    <p class="modal-subtitle">Точное масштабное сечение: модуль 11 мм + вылет магнитов 9 мм + полоса Ст3 3 мм + зазор охлаждения 80 мм + БП 28 мм + стенка 2 мм = ровно 130 мм</p>
+                </div>
+                <button id="btn-close-section-cut" class="modal-close">&times;</button>
+            </div>
+
+            <div class="modal-body" style="padding: 16px; overflow-y: auto;">
+                <!-- SVG CAD Cross Section Diagram -->
+                <div style="background: #090d16; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 12px; overflow-x: auto;">
+                    <svg viewBox="0 0 920 380" style="width: 100%; height: auto; min-width: 700px; display: block; font-family: 'Inter', system-ui, sans-serif;">
+                        <defs>
+                            <!-- Linear Gradients -->
+                            <linearGradient id="gradAirflow" x1="0%" y1="100%" x2="0%" y2="0%">
+                                <stop offset="0%" stop-color="#0284c7" stop-opacity="0.25"/>
+                                <stop offset="50%" stop-color="#06b6d4" stop-opacity="0.15"/>
+                                <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.25"/>
+                            </linearGradient>
+                            <linearGradient id="gradPsu" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#cbd5e1"/>
+                                <stop offset="100%" stop-color="#94a3b8"/>
+                            </linearGradient>
+                            <linearGradient id="gradModule" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#18181b"/>
+                                <stop offset="70%" stop-color="#27272a"/>
+                                <stop offset="100%" stop-color="#09090b"/>
+                            </linearGradient>
+                        </defs>
+
+                        <!-- Outer Aluminum Channel Box (130 mm depth = 650px, height = 260px) -->
+                        <!-- Scale: 5px = 1mm -->
+                        <!-- Box X: 120 to 770 (650px = 130mm). Y: 60 to 320 (260px) -->
+                        <rect x="120" y="60" width="650" height="260" rx="4" fill="#131826" stroke="#475569" stroke-width="3"/>
+                        
+                        <!-- Top & Bottom Flanges (2mm = 10px) -->
+                        <rect x="120" y="60" width="650" height="12" fill="#334155"/>
+                        <rect x="120" y="308" width="650" height="12" fill="#334155"/>
+                        <!-- Backplate (2mm = 10px) -->
+                        <rect x="760" y="60" width="10" height="260" fill="#334155"/>
+
+                        <!-- 1. FREE AIR CONVECTION CORRIDOR (80 mm = 400px: X=220 to 620) -->
+                        <rect x="220" y="72" width="400" height="236" fill="url(#gradAirflow)"/>
+                        
+                        <!-- Convection Airflow Flow Arrows -->
+                        <g stroke="#38bdf8" stroke-width="2.5" fill="none" opacity="0.85">
+                            <!-- Arrow column 1 -->
+                            <path d="M 280 280 L 280 110 M 273 125 L 280 108 L 287 125"/>
+                            <path d="M 360 280 L 360 110 M 353 125 L 360 108 L 367 125"/>
+                            <path d="M 440 280 L 440 110 M 433 125 L 440 108 L 447 125"/>
+                            <path d="M 520 280 L 520 110 M 513 125 L 520 108 L 527 125"/>
+                        </g>
+
+                        <!-- Convection Text inside air corridor -->
+                        <text x="420" y="160" fill="#38bdf8" font-size="14" font-weight="800" text-anchor="middle" letter-spacing="1">СВОБОДНЫЙ ВОЗДУШНЫЙ КОРИДОР: 80 ММ</text>
+                        <text x="420" y="185" fill="#94a3b8" font-size="11" text-anchor="middle">Естественная восходящая тяга (эффект дымохода) · Скорость потока 0.8 м/с</text>
+                        <text x="420" y="205" fill="#4ade80" font-size="11" font-weight="600" text-anchor="middle">❄️ Приток снизу (+5°C) ➔ ♨️ Охлаждение БП и плат ➔ Вытяжка сверху (+38°C)</text>
+
+                        <!-- 2. POWER SUPPLY P10 CZCL 200W (28 mm = 140px: X=620 to 760) -->
+                        <rect x="620" y="90" width="140" height="200" rx="3" fill="url(#gradPsu)" stroke="#64748b" stroke-width="2"/>
+                        <!-- PSU Perforation grill pattern -->
+                        <g fill="#475569">
+                            <circle cx="640" cy="120" r="3"/><circle cx="655" cy="120" r="3"/><circle cx="670" cy="120" r="3"/><circle cx="685" cy="120" r="3"/>
+                            <circle cx="640" cy="135" r="3"/><circle cx="655" cy="135" r="3"/><circle cx="670" cy="135" r="3"/><circle cx="685" cy="135" r="3"/>
+                            <circle cx="640" cy="150" r="3"/><circle cx="655" cy="150" r="3"/><circle cx="670" cy="150" r="3"/><circle cx="685" cy="150" r="3"/>
+                        </g>
+                        <!-- PSU Terminal Block -->
+                        <rect x="630" y="245" width="120" height="35" rx="2" fill="#1e293b"/>
+                        <circle cx="645" cy="262" r="4" fill="#d4af37"/><circle cx="665" cy="262" r="4" fill="#d4af37"/>
+                        <circle cx="685" cy="262" r="4" fill="#d4af37"/><circle cx="705" cy="262" r="4" fill="#d4af37"/>
+                        <!-- PSU Status LED -->
+                        <circle cx="735" cy="262" r="5" fill="#22c55e"/>
+                        <text x="690" y="112" fill="#0f172a" font-size="10" font-weight="800" text-anchor="middle">CZCL 200W 5V 40A</text>
+                        <text x="690" y="180" fill="#334155" font-size="9" text-anchor="middle">Глубина БП: 28 мм</text>
+                        <text x="690" y="195" fill="#334155" font-size="9" text-anchor="middle">Прижат к задней стенке</text>
+
+                        <!-- 3. ROLLED STEEL STRIP Ст3 (3 mm = 15px: X=205 to 220) -->
+                        <rect x="205" y="72" width="15" height="236" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.5"/>
+                        <text x="212" y="190" fill="#0f172a" font-size="10" font-weight="700" text-anchor="middle" transform="rotate(-90 212 190)">Полоса Ст3 (3 мм)</text>
+
+                        <!-- 4. NEODYMIUM MAGNET STUDS (9 mm = 45px: X=160 to 205) -->
+                        <!-- Stud Top -->
+                        <rect x="160" y="105" width="45" height="22" rx="2" fill="#94a3b8" stroke="#cbd5e1" stroke-width="1.5"/>
+                        <rect x="195" y="107" width="10" height="18" fill="#d4af37"/><!-- Brass stud end -->
+                        <!-- Stud Bottom -->
+                        <rect x="160" y="250" width="45" height="22" rx="2" fill="#94a3b8" stroke="#cbd5e1" stroke-width="1.5"/>
+                        <rect x="195" y="252" width="10" height="18" fill="#d4af37"/>
+
+                        <!-- 5. FRONT FLEXIBLE LED MODULE P4-N (11 mm = 55px: X=105 to 160) -->
+                        <rect x="105" y="60" width="55" height="260" rx="3" fill="url(#gradModule)" stroke="#3f3f46" stroke-width="2"/>
+                        <!-- SMD LED Diode grid representation -->
+                        <g fill="#ef4444">
+                            <rect x="108" y="70" width="4" height="4" rx="1"/><rect x="108" y="85" width="4" height="4" rx="1"/>
+                            <rect x="108" y="100" width="4" height="4" rx="1"/><rect x="108" y="115" width="4" height="4" rx="1"/>
+                            <rect x="108" y="130" width="4" height="4" rx="1"/><rect x="108" y="145" width="4" height="4" rx="1"/>
+                            <rect x="108" y="160" width="4" height="4" rx="1"/><rect x="108" y="175" width="4" height="4" rx="1"/>
+                            <rect x="108" y="190" width="4" height="4" rx="1"/><rect x="108" y="205" width="4" height="4" rx="1"/>
+                            <rect x="108" y="220" width="4" height="4" rx="1"/><rect x="108" y="235" width="4" height="4" rx="1"/>
+                            <rect x="108" y="250" width="4" height="4" rx="1"/><rect x="108" y="265" width="4" height="4" rx="1"/>
+                            <rect x="108" y="280" width="4" height="4" rx="1"/><rect x="108" y="295" width="4" height="4" rx="1"/>
+                        </g>
+                        <text x="132" y="190" fill="#f43f5e" font-size="10" font-weight="800" text-anchor="middle" transform="rotate(-90 132 190)">Модуль P4 (11 мм)</text>
+
+                        <!-- DIMENSIONS CAD LINES (BOTTOM) -->
+                        <g stroke="#94a3b8" stroke-width="1.2">
+                            <!-- Extension lines -->
+                            <line x1="105" y1="322" x2="105" y2="355"/>
+                            <line x1="160" y1="322" x2="160" y2="355"/>
+                            <line x1="205" y1="322" x2="205" y2="355"/>
+                            <line x1="220" y1="322" x2="220" y2="355"/>
+                            <line x1="620" y1="322" x2="620" y2="355"/>
+                            <line x1="760" y1="322" x2="760" y2="355"/>
+                            <line x1="770" y1="322" x2="770" y2="355"/>
+
+                            <!-- Dimension horizontal bar -->
+                            <line x1="105" y1="345" x2="770" y2="345"/>
+                        </g>
+
+                        <!-- Dimension Texts -->
+                        <text x="132" y="340" fill="#e2e8f0" font-size="10" font-weight="700" text-anchor="middle">11</text>
+                        <text x="182" y="340" fill="#38bdf8" font-size="10" font-weight="700" text-anchor="middle">9</text>
+                        <text x="212" y="340" fill="#cbd5e1" font-size="9" font-weight="700" text-anchor="middle">3</text>
+                        <text x="420" y="340" fill="#38bdf8" font-size="13" font-weight="800" text-anchor="middle">80 мм (ЗАЗОР ОХЛАЖДЕНИЯ)</text>
+                        <text x="690" y="340" fill="#e2e8f0" font-size="11" font-weight="700" text-anchor="middle">28</text>
+                        <text x="765" y="340" fill="#94a3b8" font-size="9" text-anchor="middle">2</text>
+
+                        <!-- TOTAL 130 MM CALLOUT -->
+                        <g stroke="#38bdf8" stroke-width="2">
+                            <line x1="105" y1="370" x2="770" y2="370"/>
+                            <line x1="105" y1="363" x2="105" y2="377"/>
+                            <line x1="770" y1="363" x2="770" y2="377"/>
+                        </g>
+                        <text x="437" y="367" fill="#38bdf8" font-size="13" font-weight="900" text-anchor="middle" background="#090d16">ИТОГО ГЛУБИНА КОНСТРУКТИВА: 130 ММ</text>
+                    </svg>
+                </div>
+
+                <!-- 4 Summary Engineering Cards -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 14px;">
+                    <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 10px;">
+                        <div style="font-size: 11px; font-weight: 700; color: #38bdf8; margin-bottom: 4px;">💨 Естественная конвекция</div>
+                        <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">Зазор 80 мм создаёт восходящую тягу 0.8 м/с. БП CZCL работают в комфортном режиме без вентиляторного шума (до +42°C).</div>
+                    </div>
+                    <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 8px; padding: 10px;">
+                        <div style="font-size: 11px; font-weight: 700; color: #06b6d4; margin-bottom: 4px;">🧲 Магнитный зазор 9 мм</div>
+                        <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">Стойки M4 с вылетом 9 мм гарантируют идеальный прижим модуля к стальным полосам Ст3 с усилием 12 или 24 кг на модуль.</div>
+                    </div>
+                    <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; padding: 10px;">
+                        <div style="font-size: 11px; font-weight: 700; color: #a855f7; margin-bottom: 4px;">⚡ Тонкие БП 28 мм</div>
+                        <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">Стандарт P10 5V 40A (толщина 28 мм) прижат к задней стенке и на 100% утоплен внутрь швеллера. Риск задевания магнитов исключён.</div>
+                    </div>
+                    <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 8px; padding: 10px;">
+                        <div style="font-size: 11px; font-weight: 700; color: #22c55e; margin-bottom: 4px;">🛠️ Замена за 1 минуту</div>
+                        <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">Фронтальный сервис: любой модуль снимается вакуумной присоской, открывая мгновенный доступ к БП и контроллеру NovaStar без разборки елки.</div>
+                    </div>
+                </div>
+
+                <!-- Action Button: Zoom to cut in 3D -->
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08);">
+                    <button id="btn-zoom-cut-3d" class="seg-btn active" style="padding: 8px 16px; font-size: 12px; cursor: pointer; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #fff;">
+                        🎯 Приблизить разрез короба в 3D на ёлке
+                    </button>
+                    <button id="btn-close-section-cut-action" class="seg-btn" style="padding: 8px 16px; font-size: 12px; cursor: pointer;">
+                        Закрыть
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

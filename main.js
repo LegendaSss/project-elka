@@ -421,20 +421,63 @@ function updatePipeMaterial() {
 // ==========================================================================
 // 5. ГЕНЕРАТОРЫ ТЕКСТУР
 // ==========================================================================
-function generateTextTexture(customStr) {
+function generateTextTexture(customStr, theme = (cfg.contentTheme || 'festive')) {
     const W = 4096, H = 256;
     const c = document.createElement('canvas');
     c.width = W; c.height = H;
     const g = c.getContext('2d');
 
     const grad = g.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0.0, '#7a060d');
-    grad.addColorStop(0.08, '#be1019');
-    grad.addColorStop(0.5, '#d91621');
-    grad.addColorStop(0.92, '#be1019');
-    grad.addColorStop(1.0, '#660409');
+    if (theme === 'gold') {
+        grad.addColorStop(0.0, '#3f2104');
+        grad.addColorStop(0.12, '#92400e');
+        grad.addColorStop(0.5, '#d97706');
+        grad.addColorStop(0.88, '#b45309');
+        grad.addColorStop(1.0, '#291402');
+    } else if (theme === 'salute') {
+        grad.addColorStop(0.0, '#020617');
+        grad.addColorStop(0.15, '#0f172a');
+        grad.addColorStop(0.5, '#1e1b4b');
+        grad.addColorStop(0.85, '#0f172a');
+        grad.addColorStop(1.0, '#020617');
+    } else if (theme === 'aurora') {
+        grad.addColorStop(0.0, '#022c22');
+        grad.addColorStop(0.15, '#064e3b');
+        grad.addColorStop(0.5, '#0d9488');
+        grad.addColorStop(0.85, '#065f46');
+        grad.addColorStop(1.0, '#022c22');
+    } else {
+        // 'festive' (Кремль / Рубин)
+        grad.addColorStop(0.0, '#7a060d');
+        grad.addColorStop(0.08, '#be1019');
+        grad.addColorStop(0.5, '#d91621');
+        grad.addColorStop(0.92, '#be1019');
+        grad.addColorStop(1.0, '#660409');
+    }
     g.fillStyle = grad;
     g.fillRect(0, 0, W, H);
+
+    if (theme === 'salute') {
+        const colors = ['#fde047', '#38bdf8', '#f43f5e', '#a855f7', '#4ade80'];
+        for (let burst = 0; burst < 24; burst++) {
+            const bx = (burst * 170) % W;
+            const by = 40 + (burst * 60) % 180;
+            const col = colors[burst % colors.length];
+            g.fillStyle = col;
+            for (let sp = 0; sp < 12; sp++) {
+                const ang = (sp / 12) * Math.PI * 2;
+                const dist = 12 + (sp * 3) % 25;
+                g.fillRect(bx + Math.cos(ang) * dist, by + Math.sin(ang) * dist, 3.5, 3.5);
+            }
+        }
+    } else if (theme === 'gold') {
+        g.fillStyle = 'rgba(254, 240, 138, 0.25)';
+        for (let i = 0; i < 60; i++) {
+            const sx = (i * 68) % W;
+            const sy = 20 + (i * 45) % (H - 40);
+            g.fillRect(sx, sy, 4, 4);
+        }
+    }
 
     g.fillStyle = 'rgba(0, 0, 0, 0.40)';
     g.fillRect(0, 0, W, 8);
@@ -1820,42 +1863,64 @@ function applyExplosion(p) {
 // ==========================================================================
 // 7.2. КИНЕМАТОГРАФИЧЕСКИЙ РЕЖИМ (ПРЕЗЕНТАЦИЯ ДЛЯ ЗАКАЗЧИКА)
 // ==========================================================================
+let tourSavedMode = 'assembled';
+let tourSavedExplosion = 0.0;
+
 const tourShots = [
     {
-        title: "ПЛАН 1/4: Монументальный ракурс снизу вверх",
-        sub: "Высота конструкции 4.0 м · Конусная спираль св. Владимира · База ⌀2.4 м",
+        title: "ЭТАП 1/5: Архитектурный дневной масштаб 4.0 м",
+        sub: "Дневной студийный свет · 152 гибких модуля P4-N · Бесшовная конусная спираль св. Владимира",
         startPos: new THREE.Vector3(0.5, 0.45, 4.4),
         endPos:   new THREE.Vector3(3.2, 0.95, 3.2),
         startLook: new THREE.Vector3(0, 2.1, 0),
         endLook:   new THREE.Vector3(0, 2.3, 0),
         env: 'day',
+        mode: 'assembled',
+        explosion: 0.0,
     },
     {
-        title: "ПЛАН 2/4: Верхний узел — Безопасный радиус R = 260 мм",
-        sub: "Силиконовые модули P4-N · Запас гибкости 44% над критическим пределом R_min",
-        startPos: new THREE.Vector3(0.95, 3.85, 1.15),
-        endPos:   new THREE.Vector3(-0.75, 4.05, 0.95),
-        startLook: new THREE.Vector3(0.08, 3.75, 0.08),
-        endLook:   new THREE.Vector3(-0.05, 3.85, 0.05),
-        env: 'day',
-    },
-    {
-        title: "ПЛАН 3/4: Динамическая спираль и панорама конструкции",
-        sub: "Сплошная лента 22.4 м · 140 гибких модулей P4-N · Обзор на 360°",
-        startPos: new THREE.Vector3(4.8, 2.6, 5.8),
-        endPos:   new THREE.Vector3(1.8, 1.9, 6.4),
-        startLook: new THREE.Vector3(0, 2.0, 0),
-        endLook:   new THREE.Vector3(0, 1.8, 0),
-        env: 'dusk',
-    },
-    {
-        title: "ПЛАН 4/4: Вечерняя иллюминация и сияние звезды",
-        sub: "Золотая верхушка · Тёплый ореол света и праздничный зимний снегопад",
-        startPos: new THREE.Vector3(-3.2, 2.7, 2.5),
-        endPos:   new THREE.Vector3(1.6, 3.3, 3.6),
+        title: "ЭТАП 2/5: Праздничная ночная иллюминация и снегопад",
+        sub: "Светящаяся бегущая строка · Падающий снег · Золотая верхушка со звездой",
+        startPos: new THREE.Vector3(3.2, 1.2, 3.2),
+        endPos:   new THREE.Vector3(-2.8, 3.4, 2.8),
         startLook: new THREE.Vector3(0, 2.2, 0),
-        endLook:   new THREE.Vector3(0, 2.5, 0),
+        endLook:   new THREE.Vector3(0, 2.6, 0),
         env: 'night',
+        mode: 'assembled',
+        explosion: 0.0,
+    },
+    {
+        title: "ЭТАП 3/5: Узел магнитной посадки 9 мм & Полосы Ст3",
+        sub: "Неодимовые магниты N52 · 3 вальцованные полосы Ст3 · Монтаж без сверления отверстий",
+        startPos: new THREE.Vector3(1.2, 1.9, 1.4),
+        endPos:   new THREE.Vector3(0.8, 1.8, 1.1),
+        startLook: new THREE.Vector3(0.2, 1.8, 0.3),
+        endLook:   new THREE.Vector3(0.1, 1.8, 0.1),
+        env: 'dusk',
+        mode: 'bareFrame',
+        explosion: 0.0,
+    },
+    {
+        title: "ЭТАП 4/5: Рентген-контроль (X-Ray) и компоновка 130 мм",
+        sub: "Блоки питания P10 5V 40A · Карты NovaStar MRV416-N · Каскадная сеть CAT6 · Зазор 80 мм",
+        startPos: new THREE.Vector3(-2.4, 2.6, 2.4),
+        endPos:   new THREE.Vector3(2.6, 2.4, 2.6),
+        startLook: new THREE.Vector3(0, 2.0, 0),
+        endLook:   new THREE.Vector3(0, 2.2, 0),
+        env: 'night',
+        mode: 'xray',
+        explosion: 0.40,
+    },
+    {
+        title: "ЭТАП 5/5: Готовый проект премиум-класса",
+        sub: "100% готовность к производству · Полный комплект КМД и спецификация оборудования",
+        startPos: new THREE.Vector3(3.6, 2.4, 4.6),
+        endPos:   new THREE.Vector3(3.2, 2.2, 4.2),
+        startLook: new THREE.Vector3(0, 2.0, 0),
+        endLook:   new THREE.Vector3(0, 2.0, 0),
+        env: 'dusk',
+        mode: 'assembled',
+        explosion: 0.0,
     }
 ];
 
@@ -1863,22 +1928,26 @@ function startTour() {
     if (tourActive) return;
     tourActive = true;
     tourStartTime = performance.now();
-    tourShotIndex = -1;
+    tourShotIndex = 0;
     tourSavedEnv = cfg.envPreset;
+    tourSavedMode = cfg.displayMode;
+    tourSavedExplosion = currentExplosion;
     tourSavedPos.copy(camera.position);
     tourSavedLook.copy(controls.target);
 
-    if (currentExplosion > 0) {
-        targetExplosion = 0.0;
-        currentExplosion = 0.0;
-        applyExplosion(0.0);
+    const hud = document.getElementById('tour-hud');
+    if (hud) {
+        hud.classList.remove('hidden');
+        hud.style.display = 'block';
     }
 
-    const hud = document.getElementById('tour-hud');
-    if (hud) hud.style.display = 'block';
+    const titleEl = document.getElementById('hud-shot-title');
+    const subEl = document.getElementById('hud-shot-sub');
+    if (titleEl && tourShots[0]) titleEl.textContent = tourShots[0].title;
+    if (subEl && tourShots[0]) subEl.textContent = tourShots[0].sub;
 
     controls.enabled = false;
-    showToast('🎬 Презентация запущена (кликните в любом месте или ESC для выхода)');
+    showToast('🎬 Презентация запущена: 5 кинематографических этапов показа объекта');
 }
 
 function stopTour() {
@@ -1888,12 +1957,17 @@ function stopTour() {
     controls.enabled = true;
 
     const hud = document.getElementById('tour-hud');
-    if (hud) hud.style.display = 'none';
+    if (hud) {
+        hud.classList.add('hidden');
+        hud.style.display = 'none';
+    }
 
+    if (tourSavedMode) setDisplayMode(tourSavedMode, false);
+    targetExplosion = tourSavedExplosion || 0.0;
     if (tourSavedEnv && tourSavedEnv !== cfg.envPreset) {
         applyEnvironment(tourSavedEnv);
     }
-    showToast('⏹️ Презентация завершена');
+    showToast('🏆 Презентация завершена! Проект готов к показу заказчику.');
 }
 
 function rebuildDimensions() {
@@ -3423,7 +3497,174 @@ function updateSingleModuleMagnets(count) {
 
 // 11. ПОДКЛЮЧЕНИЕ ЭЛЕМЕНТОВ ИНТЕРФЕЙСА (UI & МОДАЛЬНОЕ ОКНО)
 // ==========================================================================
+
+// ==========================================================================
+// 5b. ТЕМЫ ВИДЕОКОНТЕНТА И ЗАГРУЗКА ЛОГОТИПА ЗАКАЗЧИКА
+// ==========================================================================
+function applyContentTheme(theme) {
+    cfg.contentTheme = theme;
+    ['btn-theme-festive', 'btn-theme-gold', 'btn-theme-salute', 'btn-theme-aurora'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+    });
+    const activeBtn = document.getElementById(`btn-theme-${theme}`);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    const newTex = generateTextTexture(cfg.customText, theme);
+    if (textTexture) textTexture.dispose();
+    textTexture = newTex;
+
+    if (modulesMesh && modulesMesh.material) {
+        modulesMesh.material.map = textTexture;
+        modulesMesh.material.emissiveMap = textTexture;
+        modulesMesh.material.needsUpdate = true;
+    }
+    showToast(`🌟 Тема видеоконтента изменена: ${theme.toUpperCase()}`);
+}
+
+function handleClientLogoUpload(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            const W = 4096, H = 256;
+            const c = document.createElement('canvas');
+            c.width = W; c.height = H;
+            const g = c.getContext('2d');
+            
+            // Премиальный глубокий ночной фон
+            const bgGrad = g.createLinearGradient(0, 0, 0, H);
+            bgGrad.addColorStop(0, '#020617');
+            bgGrad.addColorStop(0.5, '#0f172a');
+            bgGrad.addColorStop(1, '#020617');
+            g.fillStyle = bgGrad;
+            g.fillRect(0, 0, W, H);
+            
+            // Золотая окантовка по краям ленты
+            g.fillStyle = '#eab308';
+            g.fillRect(0, 0, W, 4);
+            g.fillRect(0, H - 4, W, 4);
+            
+            // Распределение логотипа заказчика вдоль ленты
+            const repeats = 6;
+            const cellW = W / repeats;
+            const maxLogoH = H * 0.72;
+            const aspect = img.width / img.height;
+            const logoW = Math.min(cellW * 0.45, maxLogoH * aspect);
+            const logoH = logoW / aspect;
+            
+            for (let i = 0; i < repeats; i++) {
+                const cx = i * cellW + cellW * 0.28;
+                const cy = H / 2;
+                g.drawImage(img, cx - logoW / 2, cy - logoH / 2, logoW, logoH);
+                
+                // Праздничная надпись рядом с каждым логотипом
+                g.fillStyle = '#ffffff';
+                g.font = 'bold 36px "Inter", system-ui, sans-serif';
+                g.textAlign = 'left';
+                g.textBaseline = 'middle';
+                g.shadowColor = 'rgba(234, 179, 8, 0.8)';
+                g.shadowBlur = 12;
+                g.fillText('★ С НАСТУПАЮЩИМ 2027 ГОДОМ! ★', cx + logoW / 2 + 25, cy);
+                g.shadowBlur = 0;
+            }
+            
+            // Светодиодная микропиксельная сетка
+            g.fillStyle = 'rgba(0, 0, 0, 0.22)';
+            for (let y = 0; y < H; y += 4) {
+                g.fillRect(0, y, W, 1);
+            }
+            for (let x = 0; x < W; x += 4) {
+                g.fillRect(x, 0, 1, H);
+            }
+            
+            if (textTexture) textTexture.dispose();
+            textTexture = new THREE.CanvasTexture(c);
+            textTexture.wrapS = textTexture.wrapT = THREE.RepeatWrapping;
+            textTexture.magFilter = THREE.LinearFilter;
+            textTexture.minFilter = THREE.LinearMipmapLinearFilter;
+            
+            if (modulesMesh && modulesMesh.material) {
+                modulesMesh.material.map = textTexture;
+                modulesMesh.material.emissiveMap = textTexture;
+                modulesMesh.material.needsUpdate = true;
+            }
+            
+            const statusEl = document.getElementById('client-logo-status');
+            if (statusEl) {
+                statusEl.style.display = 'block';
+                statusEl.textContent = `✅ Логотип «${file.name}» транслируется на 3D ёлке!`;
+            }
+            showToast(`🎉 Логотип «${file.name}» успешно загружен и наложен на 3D ёлку!`);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+// 3D-фокусировка на срез профиля короба 130 мм
+function zoomToSectionCut3D() {
+    const modal = document.getElementById('modal-section-cut');
+    if (modal) modal.classList.remove('open');
+
+    if (!samplesRef || samplesRef.length === 0) return;
+    const s = samplesRef[Math.round(samplesRef.length * 0.25)];
+    const target = s.pos.clone();
+    const camPos = s.pos.clone().add(s.tangent.clone().multiplyScalar(1.2)).add(s.normal.clone().multiplyScalar(0.4)).add(new THREE.Vector3(0, 0.2, 0));
+    
+    camera._targetPos = camPos;
+    camera._targetLook = target;
+    camera._lerpT = 0;
+    
+    setDisplayMode('bareFrame');
+    showToast('📐 Ракурс: поперечное сечение силового короба 130 мм на высоте 1.8 м');
+}
+
 function setupUI() {
+
+    // Темы видеоконтента
+    ['festive', 'gold', 'salute', 'aurora'].forEach(t => {
+        const b = document.getElementById(`btn-theme-${t}`);
+        if (b) b.addEventListener('click', () => applyContentTheme(t));
+    });
+
+    // Загрузка логотипа заказчика
+    const btnUploadLogo = document.getElementById('btn-upload-logo');
+    const inputClientLogo = document.getElementById('input-client-logo');
+    if (btnUploadLogo && inputClientLogo) {
+        btnUploadLogo.addEventListener('click', () => inputClientLogo.click());
+        inputClientLogo.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                handleClientLogoUpload(e.target.files[0]);
+            }
+        });
+    }
+
+    // Модальное окно чертёжного среза короба 130 мм
+    const modalSectionCut = document.getElementById('modal-section-cut');
+    const btnOpenSectionCut = document.getElementById('btn-open-section-cut');
+    const btnCloseSectionCut = document.getElementById('btn-close-section-cut');
+    const btnCloseSectionCutAction = document.getElementById('btn-close-section-cut-action');
+    const btnZoomCut3D = document.getElementById('btn-zoom-cut-3d');
+
+    const openSectionCutModal = () => {
+        if (modalSectionCut) modalSectionCut.classList.add('open');
+    };
+    const closeSectionCutModal = () => {
+        if (modalSectionCut) modalSectionCut.classList.remove('open');
+    };
+
+    if (btnOpenSectionCut) btnOpenSectionCut.addEventListener('click', openSectionCutModal);
+    if (btnCloseSectionCut) btnCloseSectionCut.addEventListener('click', closeSectionCutModal);
+    if (btnCloseSectionCutAction) btnCloseSectionCutAction.addEventListener('click', closeSectionCutModal);
+    if (modalSectionCut) {
+        modalSectionCut.addEventListener('click', (e) => {
+            if (e.target === modalSectionCut) closeSectionCutModal();
+        });
+    }
+    if (btnZoomCut3D) btnZoomCut3D.addEventListener('click', zoomToSectionCut3D);
+
 
     // Управление конфигурацией магнитов (4 шт. vs 8 шт. на модуль)
     const btnMag4 = document.getElementById('btn-mag-4');
@@ -4976,11 +5217,11 @@ function animate() {
         applyExplosion(currentExplosion);
     }
 
-    // Кинематографический 4-плановый облёт для презентации
+    // Кинематографический 5-этапный облёт для презентации заказчику
     if (tourActive) {
         const elapsed = (performance.now() - tourStartTime) / 1000;
-        const totalDuration = 30.0;
-        const shotDuration = 7.5;
+        const totalDuration = 45.0;
+        const shotDuration = 9.0;
         const progress = Math.min(elapsed / totalDuration, 1.0);
 
         const fill = document.getElementById('tour-progress-fill');
@@ -4998,6 +5239,12 @@ function animate() {
 
             if (shot.env && shot.env !== cfg.envPreset) {
                 applyEnvironment(shot.env);
+            }
+            if (shot.mode && shot.mode !== cfg.displayMode) {
+                setDisplayMode(shot.mode, false);
+            }
+            if (shot.explosion !== undefined) {
+                targetExplosion = shot.explosion;
             }
         }
 
