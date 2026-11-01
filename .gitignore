@@ -1,0 +1,14 @@
+# Test screenshots and temporary captures
+shot_test_*.png
+chrome_snap.png
+playwright_test.png
+
+# Scratch python scripts
+*.py
+__pycache__/
+
+# System & IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LED Ёлка — 3D Интерактивная Визуализация и Конструктив</title>
+    <meta name="description" content="Интерактивная 3D визуализация спиральной LED ёлки из гибких P4 модулей 320×160 мм">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎄</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=tree_inspector_v7">
+    <script>
+        // Защита от чёрного экрана: прелоадер гарантированно скрывается
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('loading');
+                if (loader && !loader.classList.contains('hidden')) {
+                    loader.classList.add('hidden');
+                }
+            }, 1000);
+        });
+        window.addEventListener('error', (e) => {
+            console.warn('Unhandled window error:', e);
+            const loader = document.getElementById('loading');
+            if (loader) loader.classList.add('hidden');
+        });
+    </script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading">
+        <div class="loader"></div>
+        <p style="margin-top: 16px; font-size: 13px; color: #8890a8; font-family: 'Inter', sans-serif;">Загрузка 3D сцены и текстур...</p>
+    </div>
+
+    <!-- 3D Canvas -->
+    <canvas id="canvas3d"></canvas>
+
+    <!-- 3D Callouts Overlay Container -->
+    <div id="callouts-container"></div>
+
+    <!-- Top Status Pill (Quick Info) -->
+    <div id="status-pill">
+        <span class="status-indicator safe" id="pill-indicator"></span>
+        <span id="pill-text">Изгиб: <strong>260 мм (Безопасно)</strong> • Модулей: <strong>140 шт</strong></span>
+    </div>
+
+    <!-- Floating Panel Restore Button (when panel is hidden) -->
+    <button id="btn-show-panel" class="btn-floating-panel-toggle" title="Показать панель управления (Горячая клавиша: H)">
+        <span class="pill-icon">⚙️</span>
+        <span class="pill-label">Параметры и узлы</span>
+        <span class="pill-hotkey">H</span>
+    </button>
+
+    <!-- Control Panel -->
+    <div id="panel">
+        <div class="panel-header">
+            <div class="header-branding">
+                <div class="brand-badge">
+                    <span class="live-pulse"></span>
+                    <span>SMDLED CAD STUDIO</span>
+                    <span class="badge-tag">PRO</span>
+                </div>
+                <div class="header-main">
+                    <div class="logo-box">
+                        <span class="logo-icon">🎄</span>
+                    </div>
+                    <div class="header-titles">
+                        <h1>LED ЁЛКА 3D</h1>
+                        <p class="subtitle">Спираль св. Владимира • P4-N 320×160 • R260</p>
+                    </div>
+                </div>
+            </div>
+            <button id="btn-collapse" class="btn-panel-collapse" title="Скрыть панель в полноэкранный режим (Горячая клавиша: H)" aria-label="Скрыть">◀ Скрыть</button>
+        </div>
+
+        <div id="panel-content">
+            <!-- 0. Cinematic Presentation Launch -->
+            <div class="panel-card tour-launch-card">
+                <button id="btn-tour" class="btn-tour-launch">
+                    <span class="tour-icon">🎬</span>
+                    <span class="tour-text">
+                        <span class="tour-title">Презентация для заказчика</span>
+                        <span class="tour-sub">Кинематографический 3D облёт</span>
+                    </span>
+                    <span class="tour-badge">4K TOUR</span>
+                </button>
+            </div>
+
+            <!-- 1. Display Mode & Layers -->
+            <div class="panel-card display-mode-card" style="border-left: 3px solid #38bdf8;">
+                <div class="card-title">
+                    <span>👁️ РЕЖИМЫ И СЛОИ КАРКАСА</span>
+                    <span class="card-pill verified" id="mode-badge">В СБОРЕ</span>
+                </div>
+                <div class="segmented-control" style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 4px; background: rgba(15, 23, 42, 0.6); border-radius: 8px;">
+                    <button id="btn-mode-assembled" class="seg-btn active" title="Показать ёлку со светодиодными модулями P4-N">🎄 В сборе</button>
+                    <button id="btn-mode-xray" class="seg-btn" title="Рентген: полупрозрачный короб, видны все блоки питания и карты внутри">🔮 Рентген (X-Ray)</button>
+                    <button id="btn-mode-bare-frame" class="seg-btn" title="Снять модули: показать только силовой металлокаркас, стальные полосы, блоки питания и кабели">⚙️ Каркас</button>
+                    <button id="btn-mode-electronics" class="seg-btn" title="Показать только электрику: БП, контроллеры NovaStar и кабельные шлейфы">⚡ Электрика</button>
+                </div>
+                <div class="mode-description-hint" id="mode-hint" style="margin-top: 8px; font-size: 11px; color: #94a3b8; line-height: 1.45;">
+                    Показаны гибкие уличные модули P4-N 320×160 мм со сплошной бесшовной бегущей строкой.
+                </div>
+            </div>
+
+            <!-- 2. Environment & Lighting Presets (День / Сумерки / Ночь) -->
+            <div class="panel-card env-lighting-card">
+                <div class="card-title">
+                    <span>🌆 ОСВЕЩЕНИЕ И ВРЕМЯ СУТОК</span>
+                    <span class="card-pill verified" id="env-badge">ДЕНЬ</span>
+                </div>
+                <div class="segmented-control seg-3">
+                    <button id="btn-env-day" class="seg-btn active" title="Светлый зимний день (дневной студийный свет)">❄️ День</button>
+                    <button id="btn-env-dusk" class="seg-btn" title="Зимние сумерки (вечернее освещение, закат)">🌆 Сумерки</button>
+                    <button id="btn-env-night" class="seg-btn" title="Ночь со снегом (максимальный контраст подсветки)">🌌 Ночь</button>
+                </div>
+            </div>
+
+            <!-- 3. Executive Documentation Hub -->
+            <div class="panel-card doc-hub-card">
+                <div class="card-title">
+                    <span>📋 ДОКУМЕНТАЦИЯ И УЗЛЫ</span>
+                    <span class="card-pill verified">ВЕРИФИЦИРОВАНО</span>
+                </div>
+                <div class="btn-group-2">
+                    <button id="btn-open-passport" class="btn-executive btn-passport" title="Открыть технический паспорт и заводские параметры">
+                        <span class="btn-icon">📖</span>
+                        <span class="btn-text">
+                            <span class="btn-main-label">Техпаспорт</span>
+                            <span class="btn-sub-label">P4-N & Геометрия</span>
+                        </span>
+                    </button>
+                    <button id="btn-open-kmd" class="btn-executive btn-kmd" title="Чертеж магнитной системы 9 мм и стальных полос">
+                        <span class="btn-icon">🧲</span>
+                        <span class="btn-text">
+                            <span class="btn-main-label">Магниты 9 мм</span>
+                            <span class="btn-sub-label">Полосы Ст3 & КМД</span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 4. Magnetic Stud Configuration (4 vs 8 Magnets per Module) -->
+            <div class="panel-card magnetic-config-card" style="border-left: 3px solid #06b6d4; background: linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, rgba(30, 41, 59, 0.50) 100%);">
+                <div class="card-title">
+                    <span>🧲 КРЕПЛЕНИЕ МОДУЛЕЙ (МАГНИТЫ)</span>
+                    <span class="card-pill verified" id="mag-badge" style="background: rgba(6, 182, 212, 0.2); color: #06b6d4; border-color: rgba(6, 182, 212, 0.4);">4 МАГНИТА</span>
+                </div>
+                <div class="segmented-control seg-2">
+                    <button id="btn-mag-4" class="seg-btn active" title="По 4 магнита на модуль 320×160: 560 шт на ёлку (быстрый монтаж, прижим 12 кг/модуль)">🧲 По 4 магнита</button>
+                    <button id="btn-mag-8" class="seg-btn" title="По 8 магнитов на модуль 320×160: 1120 шт на ёлку (усиленный прижим 24 кг, идеальная дуга R260)">🧲 По 8 магнитов</button>
+                </div>
+                <div class="mag-hint" id="mag-hint" style="margin-top: 8px; font-size: 11px; color: #94a3b8; line-height: 1.45;">
+                    Выбрано 4 магнита: <strong>560 шт.</strong> на всю ёлку • Прижим <strong>12 кг/модуль</strong> • Сборка в 2 раза быстрее!
+                </div>
+                <button id="btn-open-module-inspector" class="btn-sub-action highlight-btn" style="margin-top: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.45); color: #38bdf8; font-weight: 700; padding: 8px 12px; border-radius: 8px; cursor: pointer;">
+                    <span>🔬 3D Осмотр модуля P4-N крупным планом (4 или 8 магнитов)</span>
+                </button>
+            </div>
+
+            <!-- 5. Text & Media Streaming -->
+            <div class="panel-card">
+                <div class="card-title">
+                    <span>✍️ БЕГУЩАЯ СТРОКА (КОНТЕНТ)</span>
+                    <span class="card-pill live">LIVE</span>
+                </div>
+                <div class="luxury-input-group">
+                    <input type="text" id="input-text" value="★ С НАСТУПАЮЩИМ 2027 ГОДОМ! ★ ЭКРАН СВ. ВЛАДИМИРА ★ ВСЕМ ЗДОРОВЬЯ И СЧАСТЬЯ! ★ СПАСИБО ДОКТОРАМ! ★" placeholder="Введите текст поздравления...">
+                    <button id="btn-apply-text" class="btn-apply">ОК</button>
+                </div>
+                <div class="slider-group" style="margin-top: 10px;">
+                    <label>Скорость бегущей строки <span id="val-speed">1.0x</span></label>
+                    <input type="range" id="sl-speed" min="0" max="3.0" step="0.2" value="1.0">
+                </div>
+                <div class="segmented-control seg-2" style="margin-top: 8px;">
+                    <button id="btn-mode-render" class="seg-btn active">🌟 Видеоконтент</button>
+                    <button id="btn-mode-grid" class="seg-btn">📐 Инженерная сетка</button>
+                </div>
+            </div>
+
+            <!-- 4. Spiral Dimensions & CAD Parametrics -->
+            <div class="panel-card" style="border-left: 3px solid #a855f7;">
+                <div class="card-title">
+                    <span>📐 CAD-ПАРАМЕТРИКА И СПИРАЛЬ</span>
+                    <span class="card-pill live">АДАПТИВНО</span>
+                </div>
+                <div class="slider-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                        <label style="font-size: 12px; font-weight: 600; color: #e2e8f0; margin: 0;">Глубина короба (швеллера)</label>
+                        <span id="val-depth" style="font-size: 11px; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 1px 6px; border-radius: 4px;">130 мм</span>
+                    </div>
+                    <input type="range" id="sl-depth" min="90" max="180" step="5" value="130">
+                </div>
+                <div id="box-vent-clearance" style="margin-top: -2px; margin-bottom: 12px; padding: 6px 10px; border-radius: 6px; font-size: 11px; background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.3); color: #4ade80;">
+                    💨 Воздушный зазор охлаждения: <strong id="val-vent-clearance">80 мм (Идеальная конвекция)</strong>
+                </div>
+                <div class="slider-group">
+                    <label>Высота столба <span id="val-height">4.0 м</span></label>
+                    <input type="range" id="sl-height" min="2.5" max="5.0" step="0.1" value="4.0">
+                </div>
+                <div class="slider-group">
+                    <label>⌀ Основания спирали <span id="val-base">2.4 м</span></label>
+                    <input type="range" id="sl-base" min="1.0" max="4.0" step="0.1" value="2.4">
+                </div>
+                <div class="slider-group">
+                    <label>⌀ Верхнего витка <span id="val-top">0.52 м</span></label>
+                    <input type="range" id="sl-top" min="0.35" max="1.4" step="0.02" value="0.52">
+                </div>
+                <div class="slider-group">
+                    <label>Кол-во витков спирали <span id="val-turns">5.2</span></label>
+                    <input type="range" id="sl-turns" min="3.0" max="7.0" step="0.1" value="5.2">
+                </div>
+                <div class="slider-group">
+                    <label>Ширина полотна <span id="val-ribbon">320 мм (2 ряда)</span></label>
+                    <input type="range" id="sl-ribbon" min="160" max="640" step="160" value="320">
+                </div>
+                <div class="slider-group">
+                    <label>Отступ снизу от подиума <span id="val-clearance">16 см</span></label>
+                    <input type="range" id="sl-clearance" min="0.08" max="0.40" step="0.02" value="0.16">
+                </div>
+                <button id="btn-reset-params" class="seg-btn" style="width: 100%; margin-top: 6px; padding: 6px 12px; font-size: 11px; background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px dashed rgba(255,255,255,0.2); cursor: pointer;">
+                    ↺ Сбросить параметры к базовым (130 мм / 4.0 м / 5.2 в.)
+                </button>
+            </div>
+
+            <!-- 4b. Exploded View (Инженерная взрыв-схема) -->
+            <div class="panel-card explode-card">
+                <div class="card-title">
+                    <span>💥 ИНЖЕНЕРНАЯ ВЗРЫВ-СХЕМА</span>
+                    <span class="card-pill verified">EXPLODED VIEW</span>
+                </div>
+                <div class="slider-group">
+                    <label>Степень разборки на узлы <span id="val-explode">0%</span></label>
+                    <input type="range" id="sl-explode" min="0" max="100" step="1" value="0">
+                </div>
+                <div class="segmented-control seg-3" style="margin-top: 6px;">
+                    <button id="btn-exp-0" class="seg-btn active">В сборе (0%)</button>
+                    <button id="btn-exp-50" class="seg-btn">Узлы (50%)</button>
+                    <button id="btn-exp-100" class="seg-btn">Взрыв (100%)</button>
+                </div>
+            </div>
+
+            <!-- 5. Constructive Layers & Toggles -->
+            <div class="panel-card">
+                <div class="card-title">
+                    <span>🔩 3D СЛОИ И КОНСТРУКТИВ</span>
+                </div>
+                <div class="toggle-grid">
+                    <button id="btn-toggle-callouts" class="toggle-btn active">🏷️ 3D Выноски</button>
+                    <button id="btn-toggle-dims" class="toggle-btn">📐 3D Размеры</button>
+                    <button id="btn-toggle-struts" class="toggle-btn active">Кронштейны</button>
+                    <button id="btn-toggle-caps" class="toggle-btn active">Заглушки</button>
+                    <button id="btn-toggle-fasteners" class="toggle-btn active">🧲 Магниты и полосы</button>
+                    <button id="btn-toggle-star" class="toggle-btn active">Верхушка</button>
+                    <button id="btn-toggle-snow" class="toggle-btn active">Снегопад</button>
+                </div>
+                <div class="sub-section-wrap" style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+                    <div class="sub-label" style="font-size: 11px; color: #94a3b8; margin-bottom: 6px; font-weight: 600;">ОТДЕЛКА КАРКАСА И МАЧТЫ:</div>
+                    <div class="segmented-control seg-3">
+                        <button id="btn-pipe-silver" class="seg-btn active">⚪ Хром</button>
+                        <button id="btn-pipe-graphite" class="seg-btn">🔘 Графит</button>
+                        <button id="btn-pipe-gold" class="seg-btn">🟡 Золото</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Engineering Calculations -->
+            <div class="panel-card telemetry-card">
+                <div class="card-title">
+                    <span>📊 ТЕЛЕМЕТРИЯ И РАСЧЁТЫ (BOM)</span>
+                    <span class="card-pill verified">ПАСПОРТ</span>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Длина ленты (развёртка)</span>
+                        <span class="info-value" id="info-length">—</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Кол-во модулей P4-N</span>
+                        <span class="info-value" id="info-modules">—</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Разрешение экрана</span>
+                        <span class="info-value" id="info-res">5600 × 80 px</span>
+                    </div>
+                    <div class="info-item highlight-item">
+                        <span class="info-label">Мин. радиус изгиба</span>
+                        <span class="info-value" id="info-bend">—</span>
+                    </div>
+                    <div class="info-item highlight-item">
+                        <span class="info-label">Статус безопасности</span>
+                        <span class="info-value" id="info-status">—</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Пиковая мощность (кВт)</span>
+                        <span class="info-value" id="info-power">4.9 кВт (2.2 ср.)</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Блоки питания 5V 40A</span>
+                        <span class="info-value" id="info-psu">24 шт. (5V 40A)</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Карты NovaStar MRV416-N</span>
+                        <span class="info-value" id="info-novastar">8 шт. (MRV416-N)</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Магниты ⌀13 мм (стойки)</span>
+                        <span class="info-value" id="info-magnets-total">560 шт. (1680 кг)</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Полосы Ст3 под магниты</span>
+                        <span class="info-value" id="info-strips-len">67.2 пог. м (3 шт)</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Ток 220V и автомат</span>
+                        <span class="info-value" id="info-current-220">22.3 А (Автомат 25A)</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Зазор конвекции короба</span>
+                        <span class="info-value" id="info-clearance">80 мм (норма)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. Camera View Presets -->
+            <div class="panel-card">
+                <div class="card-title">
+                    <span>📷 РАКУРС КАМЕРЫ</span>
+                    <span class="card-pill verified">360° ОБХОД</span>
+                </div>
+                <div class="segmented-control seg-5">
+                    <button id="btn-front" class="seg-btn" title="Вид спереди (фасад)">Фронт</button>
+                    <button id="btn-side" class="seg-btn" title="Вид справа (профиль)">Сбоку</button>
+                    <button id="btn-rear" class="seg-btn" title="Вид сзади (крепления к мачте)">Сзади</button>
+                    <button id="btn-top" class="seg-btn" title="Вид сверху (план)">Сверху</button>
+                    <button id="btn-free" class="seg-btn active" title="Свободный 3D обзор мышь/сенсор">3D Обзор</button>
+                </div>
+                <div style="margin-top: 8px; font-size: 11px; color: #64748b; text-align: center;">
+                    💡 Вращайте левой кнопкой мыши для детального осмотра под любым углом
+                </div>
+            </div>
+
+            <!-- 8. Actions -->
+            <div class="panel-card" style="margin-bottom: 0;">
+                <div class="btn-group-2">
+                    <button id="btn-screenshot" class="btn-action-tile btn-screen">
+                        <span class="tile-icon">📸</span>
+                        <span class="tile-label">Снимок PNG</span>
+                    </button>
+                    <button id="btn-export" class="btn-action-tile btn-spec">
+                        <span class="tile-icon">📋</span>
+                        <span class="tile-label">Спецификация</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Interactive 3D Single Module Inspector (P4-N 320x160) -->
+    <div id="modal-module-inspector" class="modal-overlay">
+        <div class="modal-card" style="max-width: 920px; width: 95%;">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <div class="modal-badge" style="background: rgba(6, 182, 212, 0.2); color: #06b6d4; border-color: rgba(6, 182, 212, 0.4);">ДЕТАЛЬНЫЙ 3D УЗЕЛ</div>
+                    <h2>Модуль P4-N 320×160 мм — Крупный план и стойки магнитов</h2>
+                    <p class="modal-subtitle">Сравнение раскладки 4 магнита vs 8 магнитов, гибкий силиконовый компаунд и прижим к стальной полосе</p>
+                </div>
+                <button id="btn-close-module-inspector" class="modal-close">&times;</button>
+            </div>
+
+            <div class="modal-body" style="padding: 16px;">
+                <!-- 3D Canvas Container for Single Module -->
+                <div style="position: relative; width: 100%; height: 380px; background: radial-gradient(circle at center, #1e293b 0%, #090d16 100%); border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.12);">
+                    <canvas id="canvas-module" style="width: 100%; height: 100%; display: block;"></canvas>
+                    
+                    <!-- Overlay View Controls -->
+                    <div style="position: absolute; top: 12px; left: 12px; display: flex; gap: 8px; z-index: 10;">
+                        <button id="btn-modview-front" class="btn-sub-action active" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.5); color: #38bdf8; padding: 6px 12px; font-weight: 600; border-radius: 6px; cursor: pointer;">
+                            Лицо (SMD LED)
+                        </button>
+                        <button id="btn-modview-back" class="btn-sub-action" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.2); color: #cbd5e1; padding: 6px 12px; font-weight: 600; border-radius: 6px; cursor: pointer;">
+                            Тыл (Силикон и магниты)
+                        </button>
+                        <button id="btn-modview-strip" class="btn-sub-action" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.2); color: #cbd5e1; padding: 6px 12px; font-weight: 600; border-radius: 6px; cursor: pointer;">
+                            🧲 Примерка к полосе Ст3
+                        </button>
+                    </div>
+
+                    <div style="position: absolute; bottom: 12px; left: 12px; font-size: 11px; color: #94a3b8; background: rgba(0,0,0,0.75); padding: 5px 12px; border-radius: 6px; pointer-events: none;">
+                        💡 Вращайте модуль зажатой левой кнопкой мыши для 360° детального осмотра
+                    </div>
+
+                    <!-- Config selector on top-right -->
+                    <div style="position: absolute; top: 12px; right: 12px; z-index: 10; display: flex; gap: 6px;">
+                        <button id="btn-inspect-mag4" class="btn-sub-action active" style="background: #0284c7; color: #fff; font-weight: 700; padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer;">
+                            🧲 4 магнита
+                        </button>
+                        <button id="btn-inspect-mag8" class="btn-sub-action" style="background: rgba(15, 23, 42, 0.85); color: #94a3b8; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); cursor: pointer;">
+                            🧲 8 магнитов
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Comparison cards below canvas -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px;">
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px; padding: 12px;">
+                        <div style="font-weight: 700; color: #38bdf8; font-size: 13px; margin-bottom: 6px;">
+                            Вариант 1: По 4 магнита на модуль (Ваше предложение)
+                        </div>
+                        <ul style="font-size: 11.5px; line-height: 1.5; color: #cbd5e1; padding-left: 18px; margin: 0;">
+                            <li><strong>Всего на ёлку:</strong> 560 магнитов (140 модулей × 4 шт.)</li>
+                            <li><strong>Сила удержания:</strong> 12 кг на модуль (вес модуля 0.38 кг — запас 31×!)</li>
+                            <li><strong>Экономика и монтаж:</strong> В 2 раза меньше работы в цеху, сборка быстрее</li>
+                            <li><strong>Особенность на радиусе:</strong> На нижних витках (R = 600–1200 мм) держит отлично. На самом верху (R = 260 мм) между магнитами пролёт 16 см — силикон может иметь микрозазор 1 мм.</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; padding: 12px;">
+                        <div style="font-weight: 700; color: #c084fc; font-size: 13px; margin-bottom: 6px;">
+                            Вариант 2: По 8 магнитов на модуль (Заводской усиленный)
+                        </div>
+                        <ul style="font-size: 11.5px; line-height: 1.5; color: #cbd5e1; padding-left: 18px; margin: 0;">
+                            <li><strong>Всего на ёлку:</strong> 1120 магнитов (140 модулей × 8 шт.)</li>
+                            <li><strong>Сила удержания:</strong> 24 кг на модуль (максимальный прижим)</li>
+                            <li><strong>Идеальная дуга:</strong> Шаг между магнитами 8 см — силикон прижат сплошной ровной дугой без микрозазоров даже на R = 260 мм</li>
+                            <li><strong>Рекомендация эксперта:</strong> Отличный баланс — 4 магнита на нижних витках и 8 магнитов на крутом верхнем витке!</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 12px; color: #94a3b8;">
+                    Заводской чертеж P4-N: глухие латунные втулки М4, вылет стойки ровно 9.0 мм.
+                </div>
+                <button id="btn-close-module-inspector-action" class="btn-secondary" style="padding: 9px 20px; font-weight: 600; border-radius: 8px; cursor: pointer; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff;">
+                    Закрыть окно осмотра
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Legend -->
+    <div id="legend">
+        <div class="legend-item"><span class="dot green"></span> Безопасный радиус (≥250 мм)</div>
+        <div class="legend-item"><span class="dot yellow"></span> Допустимый предел (180–250 мм)</div>
+        <div class="legend-item"><span class="dot red"></span> Опасный изгиб (&lt;180 мм — модуль сломается!)</div>
+    </div>
+
+    <!-- Modal: Technical Passport & Specifications -->
+    <div id="modal-passport" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <div class="modal-badge">ОФИЦИАЛЬНАЯ ДОКУМЕНТАЦИЯ</div>
+                    <h2>Инженерный паспорт & Технические характеристики</h2>
+                    <p class="modal-subtitle">Объект: Новогодняя светодиодная ёлка, экран св. Владимира (зима 2026-2027)</p>
+                </div>
+                <button id="btn-close-modal" class="modal-close">&times;</button>
+            </div>
+
+            <!-- Modal Tabs Navigation -->
+            <div class="modal-tabs">
+                <button class="tab-btn active" data-tab="tab-tree">📐 1. Конструктив и геометрия ёлки</button>
+                <button class="tab-btn" data-tab="tab-module">🔬 2. Заводской паспорт модуля P4-N</button>
+                <button class="tab-btn" data-tab="tab-electric">⚡ 3. Электрика, БП и видеоконтент</button>
+                <button class="tab-btn" data-tab="tab-kmd">🧲 4. Магнитная система (Стойки 9 мм) & КМД</button>
+            </div>
+
+            <!-- Modal Content Area -->
+            <div class="modal-body">
+                <!-- TAB 1: Tree Construction & Geometry -->
+                <div id="tab-tree" class="tab-pane active">
+                    <div class="passport-banner safe">
+                        <div class="banner-icon">✅</div>
+                        <div class="banner-text">
+                            <strong>Геометрия полностью верифицирована с учётом заводского паспорта модуля</strong>
+                            <p>Минимальный радиус изгиба на верхнем витке составляет <strong>R = 260 мм</strong> (диаметр кольца <strong>520 мм</strong>), что превышает предельный порог модуля P4-N (R<sub>min</sub> = 180–200 мм). Конструкция на 100% надёжна для зимней уличной эксплуатации.</p>
+                        </div>
+                    </div>
+
+                    <h3 class="section-title">Сводные габаритные параметры конструктива</h3>
+                    <table class="passport-table">
+                        <thead>
+                            <tr>
+                                <th>Элемент конструктива</th>
+                                <th>Параметр / Значение</th>
+                                <th>Обоснование и тех. требования</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Общая высота мачты</strong></td>
+                                <td><span class="val-badge">4.0 м</span></td>
+                                <td>Стальная несущая труба ⌀160 мм, стенка 5 мм с фланцевым оголовком</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Диаметр нижнего витка спирали</strong></td>
+                                <td><span class="val-badge">2.4 м (2400 мм)</span></td>
+                                <td>R = 1200 мм. Изгиб всего 15° на модуль — абсолютно безопасная зона</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Диаметр верхнего витка спирали</strong></td>
+                                <td><span class="val-badge highlight">0.52 м (520 мм)</span></td>
+                                <td><strong>Ключевой узел!</strong> Радиус R = 260 мм. Обеспечивает сохранность гибких P4 модулей</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Количество витков</strong></td>
+                                <td><span class="val-badge">5.2 витка</span></td>
+                                <td>Плавный сход спирали с фиксацией верхнего торца на силовой хомут мачты</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Ширина полотна экрана</strong></td>
+                                <td><span class="val-badge">320 мм</span></td>
+                                <td>Ровно 2 ряда модулей по 160 мм. Стыковка через водонепроницаемые пазы маски</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Глубина короба в сборе</strong></td>
+                                <td><span class="val-badge">130 мм (13 см)</span></td>
+                                <td>Модуль (11 мм) + неодимовые магнитные стойки + алюминиевый пространственный каркас</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Длина развёртки полотна</strong></td>
+                                <td><span class="val-badge">22.4 м</span></td>
+                                <td>Сплошная бесшовная гибкая LED-лента</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Отступ снизу от подиума</strong></td>
+                                <td><span class="val-badge">16 см</span></td>
+                                <td>Технологический зазор над фанерной палубой для защиты от снежного покрова и наледи</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Основание / Подиум</strong></td>
+                                <td><span class="val-badge">⌀3.1 м, высота 12 см</span></td>
+                                <td>Двухъярусная база: тёмный цоколь + палуба из берёзовой фанеры со стальным фланцем</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="note-box warning" style="margin-top: 14px;">
+                        <strong>⚠️ Экспертное заключение по ошибке первоначального эскиза дизайнера:</strong>
+                        <p>На исходном рендере лента уходила на излом вплотную к столбу (⌀150–160 мм), что создавало радиус изгиба R ≈ 80–100 мм. При таком радиусе гибкий уличный модуль P4-N физически разрушается: отрываются контактные площадки светодиодов, рвётся силиконовый герметик и нарушается IP65. <strong>Решение с диаметром верха 520 мм (R = 260 мм) является единственно работоспособным.</strong></p>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Module P4-N Factory Passport -->
+                <div id="tab-module" class="tab-pane">
+                    <div class="passport-banner neutral">
+                        <div class="banner-icon">🏭</div>
+                        <div class="banner-text">
+                            <strong>Данные из заводских чертежей производителя: Shenzhen Jinxinsheng Technology Co., Ltd.</strong>
+                            <p>Чертеж: <code>P4-N户外软底壳+盖板</code> (Версия V4, 2024-11-01) и конфигурация <code>S4-10S-80X40-6373+7559-JHT软.rcfgx</code></p>
+                        </div>
+                    </div>
+
+                    <h3 class="section-title">Механические и конструктивные характеристики модуля</h3>
+                    <table class="passport-table">
+                        <thead>
+                            <tr>
+                                <th>Характеристика</th>
+                                <th>Заводской параметр</th>
+                                <th>Инженерное примечание</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Модель модуля</strong></td>
+                                <td><code>P4-N 户外软模组</code></td>
+                                <td>Уличный гибкий светодиодный модуль с силиконовой маской</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Физические размеры модуля</strong></td>
+                                <td><strong>319.4 × 159.4 × 11.0 мм</strong></td>
+                                <td>Допуск +0.4 / −1.0 мм. Номинальная сетка 320 × 160 мм</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Материал гибкого корпуса</strong></td>
+                                <td><strong>70度硅胶 (Силикон 70° Shore A)</strong></td>
+                                <td>Высокоэластичный морозостойкий компаунд, сохраняющий гибкость до −35°C</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Структура компенсаторов изгиба</strong></td>
+                                <td><strong>10 сегментов (шаг 29.01 мм)</strong></td>
+                                <td>Трапециевидные пазы на тыльной стороне, обеспечивающие плавный радиусный изгиб</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Ось допустимого изгиба</strong></td>
+                                <td><strong>СТРОГО ПО ОСИ 320 мм</strong></td>
+                                <td>Поперечный изгиб по высоте 160 мм не допускается (жесткая армированная PCB)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Рекомендуемый радиус изгиба</strong></td>
+                                <td><strong>R ≥ 250–300 мм</strong></td>
+                                <td>Безопасный рабочий диапазон без деформации шага пикселей</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Критический предел изгиба</strong></td>
+                                <td><strong>R_min = 180–200 мм</strong></td>
+                                <td>Ниже этого предела происходит отрыв пайки SMD светодиодов от печатной платы</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Крепление к каркасу</strong></td>
+                                <td><strong>18 точек под винты / магниты M4</strong></td>
+                                <td>Отверстия с цековкой ⌀11.2 мм под неодимовые магнитные стойки</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Кабельные отсеки на корпусе</strong></td>
+                                <td><code>SIGNAL-IN</code>, <code>POWER</code>, <code>SIGNAL-OUT</code></td>
+                                <td>3 герметичных колодца шириной 24 мм для шлейфов HUB75 и кабелей 5V</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3 class="section-title" style="margin-top: 18px;">Электронные параметры модуля</h3>
+                    <table class="passport-table">
+                        <tbody>
+                            <tr>
+                                <td><strong>Разрешение модуля</strong></td>
+                                <td><strong>80 × 40 пикселей</strong></td>
+                                <td>3200 пикселей на модуль при шаге 4.0 мм</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Тип сканирования (Scan Rate)</strong></td>
+                                <td><strong>1/10 Scan (10S)</strong></td>
+                                <td>Высокая яркость и стабильность при уличном дневном освещении</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Драйверные микросхемы</strong></td>
+                                <td><strong>Chipone 6373 + SM7559</strong></td>
+                                <td>ШИМ-драйвер постоянного тока + строчный дешифратор с подавлением послесвечения</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Частота обновления (Refresh)</strong></td>
+                                <td><strong>1920 – 3840 Гц</strong></td>
+                                <td>Полное отсутствие мерцания на фото- и видеокамерах гостей</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Совместимость с NovaStar</strong></td>
+                                <td><code>S4-10S-80X40-6373+7559-JHT软.rcfgx</code></td>
+                                <td>Полная заводская совместимость с картами MRV208-1, MRV412, A5SPlus, DH418</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- TAB 3: Electrical, Power & Content -->
+                <div id="tab-electric" class="tab-pane">
+                    <div class="passport-banner safe">
+                        <div class="banner-icon">⚡</div>
+                        <div class="banner-text">
+                            <strong>Полный электротехнический расчёт и ТТХ для подготовки видеоконтента</strong>
+                            <p>Все параметры рассчитаны на 140 модулей P4-N (длина 22.4 м, высота 320 мм).</p>
+                        </div>
+                    </div>
+
+                    <h3 class="section-title">Требования к видеоконтенту (для видеодизайнеров)</h3>
+                    <div class="info-highlight-grid">
+                        <div class="highlight-card">
+                            <div class="card-num">5600 × 80 px</div>
+                            <div class="card-label">Рабочее разрешение видеоролика</div>
+                            <div class="card-desc">70 модулей в длину × 2 модуля по высоте</div>
+                        </div>
+                        <div class="highlight-card">
+                            <div class="card-num">70 : 1</div>
+                            <div class="card-label">Пропорция развёртки (Aspect Ratio)</div>
+                            <div class="card-desc">Ультра-широкая горизонтальная лента</div>
+                        </div>
+                        <div class="highlight-card">
+                            <div class="card-num">60 fps</div>
+                            <div class="card-label">Частота кадров контента</div>
+                            <div class="card-desc">Плавное движение бегущей строки</div>
+                        </div>
+                    </div>
+
+                    <h3 class="section-title" style="margin-top: 18px;">Электротехническая спецификация и нагрузки</h3>
+                    <table class="passport-table">
+                        <thead>
+                            <tr>
+                                <th>Параметр системы</th>
+                                <th>Расчётное значение</th>
+                                <th>Рекомендации по монтажу</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Общее количество модулей</strong></td>
+                                <td><strong>140 шт.</strong></td>
+                                <td>70 шт. вдоль ленты × 2 ряда по высоте</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Суммарная площадь экранов</strong></td>
+                                <td><strong>7.17 м²</strong></td>
+                                <td>22.4 м длины × 0.32 м высоты</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Пиковая мощность (100% белый)</strong></td>
+                                <td><strong>4.9 кВт</strong> (35 Вт / модуль)</td>
+                                <td>Максимальная кратковременная нагрузка при пуске/тестах</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Средняя рабочая мощность</strong></td>
+                                <td><strong>2.2 кВт</strong> (~15.7 Вт / модуль)</td>
+                                <td>Штатное энергопотребление в режиме бегущей строки и графики</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Блоки питания 5V 40A (200W)</strong></td>
+                                <td><strong>24 шт.</strong> (по 6 модулей на 1 БП)</td>
+                                <td>Запас по току 25% для стабильной зимней работы</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Альтернатива: БП 5V 60A (300W)</strong></td>
+                                <td><strong>16 шт.</strong> (по 9 модулей на 1 БП)</td>
+                                <td>Компактное размещение внутри короба 130 мм</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Подключение к сети 220V</strong></td>
+                                <td><strong>1 фаза: автомат 25А</strong> / 3 фазы: 16А</td>
+                                <td>Кабель питания: ВВГнг-FRLS 3 × 4.0 мм² (или 5 × 2.5 мм²)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Приёмные карты NovaStar</strong></td>
+                                <td><strong>2 шт. NovaStar MRV412 (или MRV208)</strong></td>
+                                <td>Каждая карта обслуживает 70 модулей (2800 × 80 px)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Управляющий медиасервер / плеер</strong></td>
+                                <td><strong>NovaStar TB30 / Taurus T60</strong></td>
+                                <td>Автономное воспроизведение по расписанию через 4G/Wi-Fi/LAN</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- TAB 4: Magnetic System (9mm Studs) & Longitudinal Steel Strips Guide -->
+                <div id="tab-kmd" class="tab-pane">
+                    <div class="passport-banner safe">
+                        <div class="banner-icon">🧲</div>
+                        <div class="banner-text">
+                            <strong>ВЕРИФИЦИРОВАНО: Магнитная система быстрого монтажа (Стойки 9 мм без винтов и без штапиков)</strong>
+                            <p>Модули P4-N оснащаются стандартными магнитными стойками: <strong>4 мм резьбы М4 закручиваются в модуль, 9 мм тело магнита остаётся снаружи</strong>. На каркасе по всей длине спирали идут <strong>3 продольные стальные полосы</strong> (по заводскому чертежу модуля с базой 152 мм). Модули просто прикладываются и намертво примагничиваются с лица!</p>
+                        </div>
+                    </div>
+
+                    <h3 class="passport-sec-title">1. Параметры магнитных стоек 9 мм и расчёт удержания без штапика</h3>
+                    <table class="passport-table">
+                        <thead>
+                            <tr>
+                                <th width="28%">Параметр узла</th>
+                                <th width="26%">Инженерный расчёт</th>
+                                <th width="46%">Практическое преимущество при эксплуатации</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Тип крепежа модуля</strong></td>
+                                <td><strong>Неодимовые стойки М4 (N42/N45)</strong></td>
+                                <td>Стандартные заводские цилиндрические винты-магниты (диаметр 12 мм)	мм с наружной резьбой М4</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Длина резьбы в модуль</strong></td>
+                                <td><span class="val-badge highlight">4.0 мм резьбы М4</span></td>
+                                <td>Закручивается в латунную глухую втулку модуля. Гарантированный зазор до платы 1.5	мм (прокол исключён)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Вылет магнита снаружи</strong></td>
+                                <td><span class="val-badge highlight">9.0 мм (тело магнита)</span></td>
+                                <td>Формирует калиброванный зазор 9 мм между модулем и стальной полосой каркаса</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Количество стоек на модуль</strong></td>
+                                <td><span class="val-badge">8 шт. на модуль 320×160</span></td>
+                                <td>По 4 стойки вдоль верхнего и нижнего края. Равномерно прижимают согнутый силикон по дуге R=260	мм</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Усилие прижима 1 стойки</strong></td>
+                                <td><strong>2.8 – 3.2 кг на отрыв</strong></td>
+                                <td>Прямой контакт неодимового торца с вальцованной стальной полосой Ст3 толщиной 2.0 мм</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Суммарный прижим модуля</strong></td>
+                                <td><span class="val-badge highlight">24.0 кг на модуль!</span></td>
+                                <td>Вес модуля всего 0.38	кг. Сила ветра 25	м/с — 2.05	кг. <strong>Семикратный запас прочности без штапика!</strong></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Защита от сползания вниз</strong></td>
+                                <td><strong>Опора на цокольную полку</strong></td>
+                                <td>Нижний ряд модулей опирается на нижнюю отбортовку короба — гравитационный сдвиг заблокирован на 100%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3 class="passport-sec-title" style="margin-top: 20px;">2. Продольные стальные направляющие полосы в каркасе (по чертежу P4-N)</h3>
+                    <table class="passport-table">
+                        <thead>
+                            <tr>
+                                <th width="26%">Пояс каркаса</th>
+                                <th width="24%">Позиция по высоте (Y)</th>
+                                <th width="22%">Размер стальной полосы</th>
+                                <th width="28%">Привязка к чертежу модуля</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Верхняя полоса каркаса</strong></td>
+                                <td><span class="val-badge">Y = +145 мм</span></td>
+                                <td>Полоса Ст3 30 × 2.0 мм</td>
+                                <td>Под верхний ряд магнитов верхнего модуля (отступ 8 мм от верхнего края)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Средняя двойная полоса</strong></td>
+                                <td><span class="val-badge highlight">Y = 0 мм (стык рядов)</span></td>
+                                <td>Полоса Ст3 55 × 2.0 мм</td>
+                                <td>Единая широкая полоса: держит нижние магниты верхнего модуля и верхние магниты нижнего</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Нижняя полоса каркаса</strong></td>
+                                <td><span class="val-badge">Y = −145 мм</span></td>
+                                <td>Полоса Ст3 30 × 2.0 мм</td>
+                                <td>Под нижний ряд магнитов нижнего модуля (отступ 8 мм от нижнего края)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Базовый межцентровой шаг</strong></td>
+                                <td><strong>152.0 мм по чертежу</strong></td>
+                                <td>Точно соответствует размеру 152 мм на заводском чертеже P4-N (2 	imes 76	мм от центра)</td>
+                                <td>Сплошные полосы исключают сверление сотен отверстий — модуль садится в любой точке!</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3 class="passport-sec-title" style="margin-top: 20px;">3. Размещение 24 блоков питания 5V 40A внутри короба 130 мм</h3>
+                    <table class="passport-table">
+                        <thead>
+                            <tr>
+                                <th width="30%">Элемент сечения короба</th>
+                                <th width="25%">Толщина / Габарит</th>
+                                <th width="45%">Остаток глубины и вентиляция</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Модуль P4-N + Стойка 9 мм</strong></td>
+                                <td><strong>20.0 мм (11 мм + 9 мм)</strong></td>
+                                <td>Лицевая плоскость экрана и калиброванный зазор до стальной полосы</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Стальная направляющая полоса</strong></td>
+                                <td><strong>2.0 мм (Ст3 вальцованная)</strong></td>
+                                <td>Суммарная глубина до тыла полосы: <strong>ровно 22.0 мм</strong></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Свободная глубина за полосой</strong></td>
+                                <td><span class="val-badge highlight">108.0 мм чистой глубины!</span></td>
+                                <td>130	мм − 22	мм = 108	мм свободного пространства внутри спирали</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Блоки питания 5V 40A (24 шт.)</strong></td>
+                                <td><strong>CZCL A-200AF-5 (толщина 28 мм)</strong></td>
+                                <td>Устанавливаются за полосами с шагом 93 см (1 БП на 3 модуля). Свободный зазор для воздуха: <strong>80 мм</strong></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Зимний микроклимат</strong></td>
+                                <td><strong>Естественный подогрев +18°C</strong></td>
+                                <td>Тепловыделение 24 Вт на метр исключает обледенение плат. Дренаж конденсата через отверстия ⌀6 мм</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3 class="passport-sec-title" style="margin-top: 20px;">4. Регламент монтажа и моментального переднего сервиса</h3>
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 16px; margin-top: 10px; font-size: 12.5px; line-height: 1.6; color: #cbd5e1;">
+                        <p style="margin-bottom: 10px;"><strong style="color: #38bdf8;">Шаг 1 (Подготовка в цеху):</strong> В каждый модуль P4-N за 1 минуту вкручиваются 8 магнитных стоек М4 (заход 4 мм, вылет тела 9 мм). Контргайкой М4 фиксируется глубина.</p>
+                        <p style="margin-bottom: 10px;"><strong style="color: #38bdf8;">Шаг 2 (Монтаж электрики в каркасе):</strong> Внутри короба 130 мм за стальными полосами устанавливаются 24 блока питания 5V 40A, прокладывается магистраль 220V и витая пара.</p>
+                        <p style="margin-bottom: 10px;"><strong style="color: #38bdf8;">Шаг 3 (Монтаж модулей — 1 секунда на модуль!):</strong> Модуль подносится спереди к каркасу. Все 8 магнитов сами мгновенно прищелкиваются к 3 стальным полосам. Не нужно крутить ни одного винта сзади!</p>
+                        <p style="margin-bottom: 0;"><strong style="color: #38bdf8;">Шаг 4 (Переднее обслуживание за 30 секунд):</strong> Если через год нужно проверить блок питания — вакуумной присоской с лица снимается модуль, открывается свободный доступ к БП, блок меняется за 2 минуты прямо с лестницы на площади!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer" style="display: flex; justify-content: flex-end;">
+                <button id="btn-modal-close-action" class="btn-secondary" style="padding: 10px 24px; font-weight: 600; cursor: pointer; border-radius: 8px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #ffffff;">
+                    Закрыть паспорт
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <!-- Cinematic Tour Floating HUD -->
+    <div id="tour-hud" class="tour-hud hidden">
+        <div class="tour-hud-content">
+            <div class="tour-beacon-wrap">
+                <span class="hud-live-beacon"></span>
+                <span class="hud-badge">4K TOUR</span>
+            </div>
+            <div class="hud-texts">
+                <div class="hud-shot-title" id="hud-shot-title">ПЛАН 1/4: Монументальный ракурс</div>
+                <div class="hud-shot-sub" id="hud-shot-sub">Общий вид конусной светодиодной ёлки 4.0 м</div>
+            </div>
+            <button id="btn-tour-stop" class="btn-tour-stop">
+                ⏹️ Завершить тур (ESC)
+            </button>
+        </div>
+        <div class="tour-progress-bar">
+            <div class="tour-progress-fill" id="tour-progress-fill"></div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast"></div>
+
+    <!-- Three.js Import Map (Local Zero-Dependency) -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "./libs/three/three.module.js",
+            "three/addons/": "./libs/three/addons/"
+        }
+    }
+    </script>
+    <script type="module" src="main.js?v=tree_inspector_v7"></script>
+</body>
+</html>
