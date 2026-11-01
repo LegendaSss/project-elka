@@ -1,5 +1,6 @@
 # Test screenshots and temporary captures
 shot_test_*.png
+prod_live_*.png
 chrome_snap.png
 playwright_test.png
 
